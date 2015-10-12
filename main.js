@@ -93,8 +93,8 @@ function generateTestCases()
 		var constraints = functionConstraints[funcName].constraints;
 		//console.log(funcName,constraints);
 		// Handle global constraints...
-		var fileWithContent = _.some(constraints, {kind: 'fileWithContent' });
-		var pathExists      = _.some(constraints, {kind: 'fileExists' });
+		var fileWithContent = _.some(constraints, {kind: 'fileWithContent'});
+		var pathExists      = _.some(constraints, {kind: 'fileExists' });		
 
 		// plug-in values for parameters
 		for( var c = 0; c < constraints.length; c++ )
@@ -127,7 +127,22 @@ function generateTestCases()
 		if(argslist.indexOf(ele) == -1){
 			argslist.push(ele);
 		}
-		ele = Object.keys(params).map( function(k) { 			
+		var ele = Object.keys(params).map( function(k) { 			
+			if(params[k] == 'undefined'){
+				return 1;
+			}
+			if(typeof(params[k]) == "undefined"){
+				return params[k];
+			}
+			if(typeof(params[k])== "string"){
+				return params[k];
+			}
+			return params[k] + 1;
+		}).join(",");
+		if(argslist.indexOf(ele) == -1){
+			argslist.push(ele);
+		}
+		/*ele = Object.keys(params).map( function(k) { 			
 			if(params[k] == 'undefined'){
 				return 1;
 			}
@@ -157,7 +172,7 @@ function generateTestCases()
 		}).join(",");
 		if(argslist.indexOf(ele) == -1){
 			argslist.push(ele);
-		}
+		}*/
 		ele = Object.keys(params).map( function(k) { 			
 			if(params[k] == 'undefined'){
 				return params[k];
@@ -166,14 +181,30 @@ function generateTestCases()
 				return params[k];
 			}
 			if(typeof(params[k])== "string"){
-				return '"test"';
+				var random = new Random(Random.engines.mt19937().seed(0));				
+				return '"' + random.string() + '"'; // random string
 			}
 			return params[k] - 1;
 		}).join(",");
 		if(argslist.indexOf(ele) == -1){
 			argslist.push(ele);
 		}				
-
+		ele = Object.keys(params).map( function(k) { 			
+			if(params[k] == 'undefined'){
+				return params[k];
+			}
+			if(typeof(params[k]) == "undefined"){
+				return params[k];
+			}
+			if(typeof(params[k])== "string"){
+				var random = new Random(Random.engines.mt19937().seed(0));				
+				return '"' + random.string() + '"'; // random string
+			}
+			return params[k] + 1;
+		}).join(",");
+		if(argslist.indexOf(ele) == -1){
+			argslist.push(ele);
+		}
 		if( pathExists || fileWithContent )
 		{
 			content += generateMockFsTestCases(pathExists,fileWithContent,funcName, args);
@@ -181,7 +212,7 @@ function generateTestCases()
 			content += generateMockFsTestCases(!pathExists,fileWithContent,funcName, args);
 			content += generateMockFsTestCases(pathExists,!fileWithContent,funcName, args);
 			content += generateMockFsTestCases(!pathExists,!fileWithContent,funcName, args);
-		}
+		}		
 		else
 		{
 			// Emit simple test case.
@@ -260,7 +291,7 @@ function constraints(filePath)
 								operator : child.operator,
 								expression: expression
 							}));
-					}
+					}					
 				}
 				if( child.type === 'BinaryExpression' && child.operator == "<")
 				{
@@ -274,7 +305,7 @@ function constraints(filePath)
 							new Constraint(
 							{
 								ident: child.left.name,
-								value: rightHand - 1,
+								value: parseInt(rightHand)-1,
 								funcName: funcName,
 								kind: "integer",
 								operator : child.operator,
@@ -324,7 +355,6 @@ function constraints(filePath)
 						}
 					}
 				}
-
 				if( child.type == "CallExpression" &&
 					 child.callee.property &&
 					 child.callee.property.name =="existsSync")
@@ -346,7 +376,8 @@ function constraints(filePath)
 							}));							
 						}
 					}
-				}
+				}				
+				// add CallExpression && property.name=="indexOf"
 
 			});
 
