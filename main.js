@@ -82,15 +82,16 @@ function generateTestCases()
 		// initialize params
 		for (var i =0; i < functionConstraints[funcName].params.length; i++ )
 		{
-			var paramName = functionConstraints[funcName].params[i];
-			//params[paramName] = '\'' + faker.phone.phoneNumber()+'\'';
-			params[paramName] = '\'\'';
+			var paramName = functionConstraints[funcName].params[i];			
+			params[paramName] = '\'' + faker.phone.phoneNumber()+'\'';
+			//params[paramName] = '\'\'';
 		}
 
 		//console.log( params );
 
 		// update parameter values based on known constraints.
 		var constraints = functionConstraints[funcName].constraints;
+		//console.log(funcName,constraints);
 		// Handle global constraints...
 		var fileWithContent = _.some(constraints, {kind: 'fileWithContent' });
 		var pathExists      = _.some(constraints, {kind: 'fileExists' });
@@ -101,12 +102,92 @@ function generateTestCases()
 			var constraint = constraints[c];
 			if( params.hasOwnProperty( constraint.ident ) )
 			{
+				
 				params[constraint.ident] = constraint.value;
 			}
 		}
 
+		//console.log(params);
 		// Prepare function arguments.
 		var args = Object.keys(params).map( function(k) {return params[k]; }).join(",");
+		var argslist = [];
+		argslist.push(Object.keys(params).map( function(k) {return params[k]; }).join(","));
+		var ele = Object.keys(params).map( function(k) { 			
+			if(params[k] == 'undefined'){
+				return 1;
+			}
+			if(typeof(params[k]) == "undefined"){
+				return params[k];
+			}
+			if(typeof(params[k])== "string"){
+				return '"werw"';
+			}
+			return params[k] + 1;
+		}).join(",");
+		if(argslist.indexOf(ele) == -1){
+			argslist.push(ele);
+		}
+		ele = Object.keys(params).map( function(k) { 			
+			if(params[k] == 'undefined'){
+				return 1;
+			}
+			if(typeof(params[k]) == "undefined"){
+				return params[k];
+			}
+			if(typeof(params[k])== "string"){
+				return params[k];
+			}
+			return params[k] - 1;
+		}).join(",");
+		if(argslist.indexOf(ele) == -1){
+			argslist.push(ele);
+		}
+		ele = Object.keys(params).map( function(k) { 			
+			if(params[k] == 'undefined'){
+				return -1;
+			}
+			if(typeof(params[k]) == "undefined"){
+				return params[k];
+			}
+			if(typeof(params[k])== "string"){
+				return '"werw"';
+			}
+			return params[k] - 1;
+		}).join(",");
+		if(argslist.indexOf(ele) == -1){
+			argslist.push(ele);
+		}
+		ele = Object.keys(params).map( function(k) { 			
+			if(params[k] == 'undefined'){
+				return params[k];
+			}
+			if(typeof(params[k]) == "undefined"){
+				return params[k];
+			}
+			if(typeof(params[k])== "string"){
+				return '"test"';
+			}
+			return params[k] + 1;
+		}).join(",");
+		if(argslist.indexOf(ele) == -1){
+			argslist.push(ele);
+		}
+		ele = Object.keys(params).map( function(k) { 			
+			if(params[k] == 'undefined'){
+				return params[k];
+			}
+			if(typeof(params[k]) == "undefined"){
+				return params[k];
+			}
+			if(typeof(params[k])== "string"){
+				return '"test"';
+			}
+			return params[k] - 1;
+		}).join(",");
+		if(argslist.indexOf(ele) == -1){
+			argslist.push(ele);
+		}
+
 		if( pathExists || fileWithContent )
 		{
 			content += generateMockFsTestCases(pathExists,fileWithContent,funcName, args);
@@ -118,7 +199,10 @@ function generateTestCases()
 		else
 		{
 			// Emit simple test case.
-			content += "subject.{0}({1});\n".format(funcName, args );
+			for(var i=0;i<argslist.length;i++){
+				content += "subject.{0}({1});\n".format(funcName, argslist[i] );
+			}
+			//content += "subject.{0}({1});\n".format(funcName, args );			
 		}
 
 	}
@@ -192,7 +276,66 @@ function constraints(filePath)
 							}));
 					}
 				}
+				if( child.type === 'BinaryExpression' && child.operator == "<")
+				{
+					if( child.left.type == 'Identifier' && params.indexOf( child.left.name ) > -1)
+					{
+						// get expression from original source code:
+						var expression = buf.substring(child.range[0], child.range[1]);
+						var rightHand = buf.substring(child.right.range[0], child.right.range[1])
 
+						functionConstraints[funcName].constraints.push( 
+							new Constraint(
+							{
+								ident: child.left.name,
+								value: rightHand - 1,
+								funcName: funcName,
+								kind: "integer",
+								operator : child.operator,
+								expression: expression
+							}));
+					}
+				}
+				if( child.type === 'BinaryExpression' && child.operator == ">")
+				{
+					if( child.left.type == 'Identifier' && params.indexOf( child.left.name ) > -1)
+					{
+						// get expression from original source code:
+						var expression = buf.substring(child.range[0], child.range[1]);
+						var rightHand = buf.substring(child.right.range[0], child.right.range[1])
+
+						functionConstraints[funcName].constraints.push( 
+							new Constraint(
+							{
+								ident: child.left.name,
+								value: parseInt(rightHand)+1,
+								funcName: funcName,
+								kind: "integer",
+								operator : child.operator,
+								expression: expression
+							}));
+					}
+				}
+				if( child.type === 'BinaryExpression' && child.operator == "!=")
+				{
+					if( child.left.type == 'Identifier' && params.indexOf( child.left.name ) > -1)
+					{
+						// get expression from original source code:
+						var expression = buf.substring(child.range[0], child.range[1]);
+						var rightHand = buf.substring(child.right.range[0], child.right.range[1])
+
+						functionConstraints[funcName].constraints.push( 
+							new Constraint(
+							{
+								ident: child.left.name,	
+								value: rightHand,							
+								funcName: funcName,
+								kind: "integer",
+								operator : child.operator,
+								expression: expression
+							}));
+					}
+				}
 				if( child.type == "CallExpression" && 
 					 child.callee.property &&
 					 child.callee.property.name =="readFileSync" )
@@ -220,7 +363,7 @@ function constraints(filePath)
 					 child.callee.property.name =="existsSync")
 				{
 					for( var p =0; p < params.length; p++ )
-					{
+					{						
 						if( child.arguments[0].name == params[p] )
 						{
 							functionConstraints[funcName].constraints.push( 
@@ -233,7 +376,7 @@ function constraints(filePath)
 								kind: "fileExists",
 								operator : child.operator,
 								expression: expression
-							}));
+							}));							
 						}
 					}
 				}
