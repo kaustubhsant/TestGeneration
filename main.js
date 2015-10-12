@@ -120,9 +120,9 @@ function generateTestCases()
 				return params[k];
 			}
 			if(typeof(params[k])== "string"){
-				return '"werw"';
+				return params[k];
 			}
-			return params[k] + 1;
+			return params[k] - 1;
 		}).join(",");
 		if(argslist.indexOf(ele) == -1){
 			argslist.push(ele);
@@ -135,13 +135,14 @@ function generateTestCases()
 				return params[k];
 			}
 			if(typeof(params[k])== "string"){
-				return params[k];
+				return '"werw"';
 			}
-			return params[k] - 1;
+			return params[k] + 1;
 		}).join(",");
 		if(argslist.indexOf(ele) == -1){
 			argslist.push(ele);
 		}
+		
 		ele = Object.keys(params).map( function(k) { 			
 			if(params[k] == 'undefined'){
 				return -1;
@@ -167,26 +168,11 @@ function generateTestCases()
 			if(typeof(params[k])== "string"){
 				return '"test"';
 			}
-			return params[k] + 1;
-		}).join(",");
-		if(argslist.indexOf(ele) == -1){
-			argslist.push(ele);
-		}
-		ele = Object.keys(params).map( function(k) { 			
-			if(params[k] == 'undefined'){
-				return params[k];
-			}
-			if(typeof(params[k]) == "undefined"){
-				return params[k];
-			}
-			if(typeof(params[k])== "string"){
-				return '"test"';
-			}
 			return params[k] - 1;
 		}).join(",");
 		if(argslist.indexOf(ele) == -1){
 			argslist.push(ele);
-		}
+		}				
 
 		if( pathExists || fileWithContent )
 		{
