@@ -60,15 +60,23 @@ var mockFileLibrary =
 {
 	pathExists:
 	{
-		'path/fileExists': {}
+		'dir1': {},	
+					
+	},
+	dirWithContent:
+	{
+		dir1:
+		{
+			file1: ''
+		}
 	},
 	fileWithContent:
 	{
-		pathContent: 
+		dir1: 
 		{	
-  			file1: 'text content',
-		}
-	}
+  			file1: 'text content', 					
+		},		
+	},
 };
 
 function generateTestCases()
@@ -94,7 +102,8 @@ function generateTestCases()
 		//console.log(funcName,constraints);
 		// Handle global constraints...
 		var fileWithContent = _.some(constraints, {kind: 'fileWithContent'});
-		var pathExists      = _.some(constraints, {kind: 'fileExists' });		
+		var pathExists      = _.some(constraints, {kind: 'fileExists' });	
+		var dirWithContent = _.some(constraints, {kind: 'dirWithContent'});
 
 		// plug-in values for parameters
 		for( var c = 0; c < constraints.length; c++ )
@@ -141,38 +150,7 @@ function generateTestCases()
 		}).join(",");
 		if(argslist.indexOf(ele) == -1){
 			argslist.push(ele);
-		}
-		/*ele = Object.keys(params).map( function(k) { 			
-			if(params[k] == 'undefined'){
-				return 1;
-			}
-			if(typeof(params[k]) == "undefined"){
-				return params[k];
-			}
-			if(typeof(params[k])== "string"){
-				return '"werw"';
-			}
-			return params[k] + 1;
-		}).join(",");
-		if(argslist.indexOf(ele) == -1){
-			argslist.push(ele);
-		}
-		
-		ele = Object.keys(params).map( function(k) { 			
-			if(params[k] == 'undefined'){
-				return -1;
-			}
-			if(typeof(params[k]) == "undefined"){
-				return params[k];
-			}
-			if(typeof(params[k])== "string"){
-				return '"werw"';
-			}
-			return params[k] - 1;
-		}).join(",");
-		if(argslist.indexOf(ele) == -1){
-			argslist.push(ele);
-		}*/
+		}		
 		ele = Object.keys(params).map( function(k) { 			
 			if(params[k] == 'undefined'){
 				return params[k];
@@ -204,14 +182,18 @@ function generateTestCases()
 		}).join(",");
 		if(argslist.indexOf(ele) == -1){
 			argslist.push(ele);
-		}
-		if( pathExists || fileWithContent )
-		{
-			content += generateMockFsTestCases(pathExists,fileWithContent,funcName, args);
+		}				
+		if( pathExists || fileWithContent|| dirWithContent)
+		{			
+			content += generateMockFsTestCases(pathExists,fileWithContent,dirWithContent,funcName, args);
+			content += generateMockFsTestCases(pathExists,fileWithContent,!dirWithContent,funcName, args);
 			// Bonus...generate constraint variations test cases....
-			content += generateMockFsTestCases(!pathExists,fileWithContent,funcName, args);
-			content += generateMockFsTestCases(pathExists,!fileWithContent,funcName, args);
-			content += generateMockFsTestCases(!pathExists,!fileWithContent,funcName, args);
+			content += generateMockFsTestCases(!pathExists,fileWithContent,dirWithContent,funcName, args);
+			content += generateMockFsTestCases(!pathExists,fileWithContent,!dirWithContent,funcName, args);
+			content += generateMockFsTestCases(pathExists,!fileWithContent,dirWithContent,funcName, args);
+			content += generateMockFsTestCases(pathExists,!fileWithContent,!dirWithContent,funcName, args);
+			content += generateMockFsTestCases(!pathExists,!fileWithContent,dirWithContent,funcName, args);
+			content += generateMockFsTestCases(!pathExists,!fileWithContent,!dirWithContent,funcName, args);
 		}		
 		else
 		{
@@ -229,20 +211,23 @@ function generateTestCases()
 
 }
 
-function generateMockFsTestCases (pathExists,fileWithContent,funcName,args) 
+function generateMockFsTestCases (pathExists,fileWithContent,dirWithContent,funcName,args) 
 {
 	var testCase = "";
 	// Build mock file system based on constraints.
 	var mergedFS = {};
 	if( pathExists )
-	{
+	{		
 		for (var attrname in mockFileLibrary.pathExists) { mergedFS[attrname] = mockFileLibrary.pathExists[attrname]; }
 	}
 	if( fileWithContent )
 	{
 		for (var attrname in mockFileLibrary.fileWithContent) { mergedFS[attrname] = mockFileLibrary.fileWithContent[attrname]; }
 	}
-
+	if( dirWithContent )
+	{
+		for (var attrname in mockFileLibrary.dirWithContent) { mergedFS[attrname] = mockFileLibrary.dirWithContent[attrname]; }
+	}
 	testCase += 
 	"mock(" +
 		JSON.stringify(mergedFS)
@@ -332,8 +317,7 @@ function constraints(filePath)
 								expression: expression
 							}));
 					}
-				}
-				
+				}				
 				if( child.type == "CallExpression" && 
 					 child.callee.property &&
 					 child.callee.property.name =="readFileSync" )
@@ -346,7 +330,7 @@ function constraints(filePath)
 							new Constraint(
 							{
 								ident: params[p],
-								value:  "'pathContent/file1'",
+								value:  "'dir1/file1'",
 								funcName: funcName,
 								kind: "fileWithContent",
 								operator : child.operator,
@@ -355,6 +339,27 @@ function constraints(filePath)
 						}
 					}
 				}
+				if( child.type == "CallExpression" && 
+					 child.callee.property &&
+					 child.callee.property.name =="readdirSync" )
+				{
+					for( var p =0; p < params.length; p++ )
+					{
+						if( child.arguments[0].name == params[p] )
+						{
+							functionConstraints[funcName].constraints.push( 
+							new Constraint(
+							{
+								ident: params[p],
+								value:  "'dir1'",
+								funcName: funcName,
+								kind: "dirWithContent",
+								operator : child.operator,
+								expression: expression
+							}));
+						}
+					}
+				}									
 				if( child.type == "CallExpression" &&
 					 child.callee.property &&
 					 child.callee.property.name =="existsSync")
@@ -376,8 +381,10 @@ function constraints(filePath)
 							}));							
 						}
 					}
-				}				
-				// add CallExpression && property.name=="indexOf"
+				}	
+				
+				// add property.name=="indexOf"
+				// add property.name=="readdirSync"
 
 			});
 
