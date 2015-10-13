@@ -198,20 +198,40 @@ function generateTestCases()
 		}
 		else if(areacode)
 		{
-			content += "subject.{0}({1});\n".format(funcName, args );			
+			content += "subject.{0}({1});\n".format(funcName, args );	
+			var testarea = "";
+			for( var c = 0; c < constraints.length; c++ )
+			{
+				var constraint = constraints[c];
+				if( constraint.kind == "areacode" )
+				{
+				
+					testarea = constraint.value.substring(1,4);
+					//console.log(testarea);
+				}			
+			}		
 			ele = Object.keys(params).map( function(k) { 			
-			params[k] = '\'' + faker.phone.phoneNumber()+'\'';		
+			params[k] = '\'' + faker.phone.phoneNumber()+'\'';
+			if(params[k].indexOf("-") == 2)
+			{
+				params[k] = '\'' + params[k].substring(3,params[k].length);
+			}		
+			//console.log(params[k]);
 			var area = "";
+			//(345) 567 8999
 			if(params[k].indexOf("(")==1)
 				area = params[k].substring(2,5);
-			else if(params[k].indexOf("-") == 2)
-				area = params[k].substring(3,6);
+			//else if(params[k].indexOf("-") == 2)
+			//	area = params[k].substring(3,6);
+			// 234-345-5678
 			else if(params[k].indexOf("-") > 2)
-				area = params[k].substring(5,9);
+				area = params[k].substring(1,4);
+			// 234.457.5678
 			else if(params[k].indexOf(".") > -1)
-				area = params[k].substring(1,4);			
-			console.log(params[k].replace(area,"212"));
-			return params[k].replace(area,"212");
+				area = params[k].substring(1,4);
+			//console.log(area);			
+			//console.log(params[k].replace(area,testarea));
+			return params[k].replace(area,testarea);
 			}).join(",");
 			content += "subject.{0}({1});\n".format(funcName, ele );
 		}		
