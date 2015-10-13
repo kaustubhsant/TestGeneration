@@ -103,7 +103,8 @@ function generateTestCases()
 		// Handle global constraints...
 		var fileWithContent = _.some(constraints, {kind: 'fileWithContent'});
 		var pathExists      = _.some(constraints, {kind: 'fileExists' });	
-		var dirWithContent = _.some(constraints, {kind: 'dirWithContent'});
+		var dirWithContent = _.some(constraints, {kind: 'dirWithContent'});		
+		var areacode = _.some(constraints, {kind: 'areacode'});		
 
 		// plug-in values for parameters
 		for( var c = 0; c < constraints.length; c++ )
@@ -113,7 +114,7 @@ function generateTestCases()
 			{
 				
 				params[constraint.ident] = constraint.value;
-			}
+			}			
 		}
 
 		//console.log(params);
@@ -182,7 +183,7 @@ function generateTestCases()
 		}).join(",");
 		if(argslist.indexOf(ele) == -1){
 			argslist.push(ele);
-		}				
+		}						
 		if( pathExists || fileWithContent|| dirWithContent)
 		{			
 			content += generateMockFsTestCases(pathExists,fileWithContent,dirWithContent,funcName, args);
@@ -194,6 +195,25 @@ function generateTestCases()
 			content += generateMockFsTestCases(pathExists,!fileWithContent,!dirWithContent,funcName, args);
 			content += generateMockFsTestCases(!pathExists,!fileWithContent,dirWithContent,funcName, args);
 			content += generateMockFsTestCases(!pathExists,!fileWithContent,!dirWithContent,funcName, args);
+		}
+		else if(areacode)
+		{
+			content += "subject.{0}({1});\n".format(funcName, args );			
+			ele = Object.keys(params).map( function(k) { 			
+			params[k] = '\'' + faker.phone.phoneNumber()+'\'';		
+			var area = "";
+			if(params[k].indexOf("(")==1)
+				area = params[k].substring(2,5);
+			else if(params[k].indexOf("-") == 2)
+				area = params[k].substring(3,6);
+			else if(params[k].indexOf("-") > 2)
+				area = params[k].substring(5,9);
+			else if(params[k].indexOf(".") > -1)
+				area = params[k].substring(1,4);			
+			console.log(params[k].replace(area,"212"));
+			return params[k].replace(area,"212");
+			}).join(",");
+			content += "subject.{0}({1});\n".format(funcName, ele );
 		}		
 		else
 		{
@@ -276,7 +296,24 @@ function constraints(filePath)
 								operator : child.operator,
 								expression: expression
 							}));
-					}					
+					}
+					else if( child.left.type == 'Identifier' && params.indexOf( child.left.name ) == -1)
+					{
+						// get expression from original source code:
+						var expression = buf.substring(child.range[0], child.range[1]);
+						var rightHand = buf.substring(child.right.range[0], child.right.range[1])
+
+						functionConstraints[funcName].constraints.push( 
+							new Constraint(
+							{
+								ident: child.left.name,
+								value: rightHand,
+								funcName: funcName,
+								kind: "areacode",
+								operator : child.operator,
+								expression: expression
+							}));
+					}									
 				}
 				if( child.type === 'BinaryExpression' && child.operator == "<")
 				{
@@ -383,9 +420,8 @@ function constraints(filePath)
 					}
 				}	
 				
-				// add property.name=="indexOf"
-				// add property.name=="readdirSync"
-
+				// handle property.name=="indexOf"	
+				// handle area=="212" case
 			});
 
 			console.log( functionConstraints[funcName]);
