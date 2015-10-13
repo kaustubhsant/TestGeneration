@@ -221,8 +221,6 @@ function generateTestCases()
 			//(345) 567 8999
 			if(params[k].indexOf("(")==1)
 				area = params[k].substring(2,5);
-			//else if(params[k].indexOf("-") == 2)
-			//	area = params[k].substring(3,6);
 			// 234-345-5678
 			else if(params[k].indexOf("-") > 2)
 				area = params[k].substring(1,4);
